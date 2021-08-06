@@ -1,7 +1,7 @@
-import { CompanyEntity } from './company.entity';
+import { Company } from './company.entity';
 
-describe('CompanyEntity', () => {
+describe('Company', () => {
   it('should be defined', () => {
-    expect(new CompanyEntity()).toBeDefined();
+    expect(new Company()).toBeDefined();
   });
 });

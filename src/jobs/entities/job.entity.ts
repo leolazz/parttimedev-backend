@@ -1,6 +1,6 @@
-import { type } from "os";
-import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Fields } from "../enums/Fields.enum";
+import { Company } from "./company.entity";
 
 @Entity()
 export class Job {
@@ -17,8 +17,8 @@ export class Job {
   @Column()
   income: number;
   
-  @Column()
-  company: string;
+  @ManyToOne(() => Company, company => company.jobs)
+  company: Company;
 
   @Column()
   location: string;

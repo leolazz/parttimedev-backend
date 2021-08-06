@@ -3,15 +3,20 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
+import { Company } from './entities/company.entity';
 import { Job } from './entities/job.entity';
 
 @Injectable()
 export class JobsService {
   constructor(
-    @InjectRepository(Job)
-    private readonly jobRepository: Repository<Job>,
+  @InjectRepository(Job)
+  private readonly jobRepository: Repository<Job>,
+
+  @InjectRepository(Company)
+  private readonly companyRepository: Repository<Company>,
 
   ) {}
+
   create(createJobDto: CreateJobDto) {
     return 'This action adds a new job';
   }
