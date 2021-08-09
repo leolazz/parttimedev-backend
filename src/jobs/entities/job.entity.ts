@@ -17,7 +17,7 @@ export class Job {
   @Column()
   income: number;
   
-  @ManyToOne(() => Company, company => company.jobs)
+  @ManyToOne(() => Company, company => company.jobs, {cascade: true})
   company: Company;
 
   @Column()

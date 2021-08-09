@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, Post } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { combineAll } from 'rxjs';
 import { Repository } from 'typeorm';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
@@ -16,17 +17,34 @@ export class JobsService {
   private readonly companyRepository: Repository<Company>,
 
   ) {}
-
-  create(createJobDto: CreateJobDto) {
-    return 'This action adds a new job';
+  
+  private async preloadCompanyByName(company: Company): Promise<Company> {
+    const existingCompany = await this.companyRepository.findOne(company);
+    if (existingCompany) {
+      return existingCompany;
+    }
+    return this.companyRepository.create(company);
+  }
+  
+  async create(createJobDto: CreateJobDto) {
+    const company = await this.preloadCompanyByName(createJobDto.company);
+    if(company) { createJobDto.company = company; }
+    const job = this.jobRepository.create(createJobDto);
+    return this.jobRepository.save(job);
   }
 
   findAll() {
-    return `This action returns all jobs`;
+    return this.jobRepository.find( {relations: ['company']});
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} job`;
+  async findOne(id: number) {
+    const job = await this.jobRepository.findOne(id, {
+      relations: ['company'], 
+    });
+    if(!job) {
+      throw new NotFoundException(`Job #${id} not found`)
+    }
+    return job;
   }
 
   update(id: number, updateJobDto: UpdateJobDto) {
