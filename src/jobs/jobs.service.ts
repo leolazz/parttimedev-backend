@@ -1,11 +1,13 @@
 import { Injectable, NotFoundException, Post } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { stringify } from 'querystring';
 import { combineAll } from 'rxjs';
 import { Repository } from 'typeorm';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
 import { Company } from './entities/company.entity';
 import { Job } from './entities/job.entity';
+import { Fields } from './enums/Fields.enum';
 
 @Injectable()
 export class JobsService {
@@ -35,6 +37,18 @@ export class JobsService {
 
   findAll() {
     return this.jobRepository.find( {relations: ['company']});
+  }
+
+  findAllByCompany(company: string) {
+    return this.jobRepository.find({where: {company: company}})
+  }
+
+  findAllByField(field: Fields) {
+    return this.jobRepository.find({where: {field: field}})
+  }
+
+  findAllByLocation(location: string) {
+    return this.jobRepository.find({where: {location: location}})
   }
 
   async findOne(id: number) {

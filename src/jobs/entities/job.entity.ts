@@ -1,4 +1,5 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { type } from "os";
+import { Column, Entity, OneToOne, ManyToOne, PrimaryGeneratedColumn, JoinColumn } from "typeorm";
 import { Fields } from "../enums/Fields.enum";
 import { Company } from "./company.entity";
 
@@ -9,7 +10,7 @@ export class Job {
   id: number;
 
   @Column()
-  field: Fields
+  field: Fields;
   
   @Column()
   title: string;
@@ -17,7 +18,11 @@ export class Job {
   @Column()
   income: number;
   
-  @ManyToOne(() => Company, company => company.jobs, {cascade: true})
+  @ManyToOne(() => Company, company => company.jobs, 
+  {
+    cascade: true,
+    eager: true
+  })
   company: Company;
 
   @Column()

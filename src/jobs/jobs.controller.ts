@@ -3,6 +3,8 @@ import { JobsService } from './jobs.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
 import { ApiTags } from '@nestjs/swagger';
+import { Company } from './entities/company.entity';
+import { Fields } from './enums/Fields.enum';
 
 @ApiTags('jobs')
 @Controller('jobs')
@@ -12,6 +14,21 @@ export class JobsController {
   @Post()
   create(@Body() createJobDto: CreateJobDto) {
     return this.jobsService.create(createJobDto);
+  }
+
+  @Get('/company/:company')
+  findAllByCompany(@Param('company') company : string) {
+    return this.jobsService.findAllByCompany(company);
+  }
+
+  @Get('/field/:field')
+  findAllByField(@Param('field') field : Fields) {
+    return this.jobsService.findAllByField(field);
+  }
+  
+  @Get('/location/:location')
+  findAllByLocation(@Param('location') location : string) {
+    return this.jobsService.findAllByLocation(location);
   }
 
   @Get()

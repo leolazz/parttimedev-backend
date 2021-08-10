@@ -12,5 +12,7 @@ export class CreateJobDto {
 
   company: Company;
 
+  companyName: string;
+
   location: string;
 }
