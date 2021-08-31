@@ -1,9 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { JobsService } from './jobs.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
 import { ApiTags } from '@nestjs/swagger';
-import { Company } from './entities/company.entity';
 import { Fields } from './enums/Fields.enum';
 
 @ApiTags('jobs')
@@ -17,22 +24,23 @@ export class JobsController {
   }
 
   @Get('/company/:company')
-  findAllByCompany(@Param('company') company : string) {
+  findAllByCompany(@Param('company') company: string) {
     return this.jobsService.findAllByCompany(company);
   }
 
   @Get('/field/:field')
-  findAllByField(@Param('field') field : Fields) {
+  findAllByField(@Param('field') field: Fields) {
     return this.jobsService.findAllByField(field);
   }
-  
+
   @Get('/location/:location')
-  findAllByLocation(@Param('location') location : string) {
+  findAllByLocation(@Param('location') location: string) {
     return this.jobsService.findAllByLocation(location);
   }
 
   @Get()
   findAll() {
+    console.log(process.env.DATABASE_USER);
     return this.jobsService.findAll();
   }
 

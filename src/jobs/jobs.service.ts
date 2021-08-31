@@ -12,14 +12,13 @@ import { Fields } from './enums/Fields.enum';
 @Injectable()
 export class JobsService {
   constructor(
-  @InjectRepository(Job)
-  private readonly jobRepository: Repository<Job>,
+    @InjectRepository(Job)
+    private readonly jobRepository: Repository<Job>,
 
-  @InjectRepository(Company)
-  private readonly companyRepository: Repository<Company>,
-
+    @InjectRepository(Company)
+    private readonly companyRepository: Repository<Company>,
   ) {}
-  
+
   private async preloadCompanyByName(company: Company): Promise<Company> {
     const existingCompany = await this.companyRepository.findOne(company);
     if (existingCompany) {
@@ -27,36 +26,38 @@ export class JobsService {
     }
     return this.companyRepository.create(company);
   }
-  
+
   async create(createJobDto: CreateJobDto) {
     const company = await this.preloadCompanyByName(createJobDto.company);
-    if(company) { createJobDto.company = company; }
+    if (company) {
+      createJobDto.company = company;
+    }
     const job = this.jobRepository.create(createJobDto);
     return this.jobRepository.save(job);
   }
 
   findAll() {
-    return this.jobRepository.find( {relations: ['company']});
+    return this.jobRepository.find({ relations: ['company'] });
   }
 
   findAllByCompany(company: string) {
-    return this.jobRepository.find({where: {company: company}})
+    return this.jobRepository.find({ where: { company: company } });
   }
 
   findAllByField(field: Fields) {
-    return this.jobRepository.find({where: {field: field}})
+    return this.jobRepository.find({ where: { field: field } });
   }
 
   findAllByLocation(location: string) {
-    return this.jobRepository.find({where: {location: location}})
+    return this.jobRepository.find({ where: { location: location } });
   }
 
   async findOne(id: number) {
     const job = await this.jobRepository.findOne(id, {
-      relations: ['company'], 
+      relations: ['company'],
     });
-    if(!job) {
-      throw new NotFoundException(`Job #${id} not found`)
+    if (!job) {
+      throw new NotFoundException(`Job #${id} not found`);
     }
     return job;
   }
