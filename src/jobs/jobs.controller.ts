@@ -12,7 +12,7 @@ import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
 import { ApiTags } from '@nestjs/swagger';
 import { Fields } from './enums/Fields.enum';
-
+import { scrape } from '../scraper/indeedScraper';
 @ApiTags('jobs')
 @Controller('jobs')
 export class JobsController {
@@ -40,7 +40,7 @@ export class JobsController {
 
   @Get()
   findAll() {
-    console.log(process.env.DATABASE_USER);
+    scrape();
     return this.jobsService.findAll();
   }
 
