@@ -12,7 +12,6 @@ import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
 import { ApiTags } from '@nestjs/swagger';
 import { Fields } from './enums/Fields.enum';
-import { scrape } from '../scraper/indeedScraper';
 @ApiTags('jobs')
 @Controller('jobs')
 export class JobsController {
@@ -40,13 +39,14 @@ export class JobsController {
 
   @Get()
   findAll() {
+    let jobs = this.jobsService.scrape();
     return this.jobsService.findAll();
   }
 
   @Get('/scrape/')
   async scrapeAndPersist() {
-    let test = await scrape();
-    return console.log(test.length);
+    // let test = await scrape();
+    return console.log(await this.jobsService.scrape());
     // return this.jobsService.createFromScrape(await scrape());
   }
 
