@@ -1,7 +1,11 @@
 import * as puppeteer from 'puppeteer';
+import { CreateJobDto } from '../jobs/dto/create-job.dto';
+import { Company } from '../jobs/entities/company.entity';
+import { Job } from '../jobs/entities/job.entity';
+import { JobsService } from '../jobs/jobs.service';
 
 export function scrape() {
-  return new Promise(async (resolve, reject) => {
+  return new Promise<Object[]>(async (resolve, reject) => {
     try {
       const browser = await puppeteer.launch({ headless: true });
       const page = await browser.newPage();
@@ -10,15 +14,13 @@ export function scrape() {
         { waitUntil: 'domcontentloaded' },
       );
       await page.waitForSelector('span.salary-snippet');
-      let urls = await page.evaluate(() => {
+      let jobs = await page.evaluate(() => {
         const container = document.querySelector('#resultsCol');
         const linksNodeList: NodeListOf<HTMLAnchorElement> =
           container.querySelectorAll('a[id^="job_"], a[id^="sj_"]');
         const title = document.querySelectorAll('h2.jobTitle > span');
-        const companyName = document.querySelectorAll('span.companyName');
-        const companyLocation = document.querySelectorAll(
-          'div.companyLocation',
-        );
+        const company = document.querySelectorAll('span.companyName');
+        const location = document.querySelectorAll('div.companyLocation');
         const incomeCondition = document.querySelectorAll('td.resultContent');
         const jobDescription = document.querySelectorAll('div.job-snippet');
         const income = document.querySelectorAll('span.salary-snippet');
@@ -36,9 +38,9 @@ export function scrape() {
         for (let i = 0; i < linksNodeList.length; i++) {
           jobArray[i] = {
             title: title[i].textContent.trim(),
-            companyName: companyName[i].textContent.trim(),
-            companyLocation: companyLocation[i].textContent.trim(),
-            jobDescription: jobDescription[i].textContent
+            company: company[i].textContent.trim(),
+            location: location[i].textContent.trim(),
+            description: jobDescription[i].textContent
               .trim()
               .replace(/\n|\r/g, ''),
             income: checkedIncome[i],
@@ -48,10 +50,9 @@ export function scrape() {
         return jobArray;
       });
       browser.close();
-      return resolve(urls);
+      return resolve(jobs);
     } catch (e) {
       return reject(e);
     }
   });
 }
-scrape().then(console.log).catch(console.error);
