@@ -28,6 +28,7 @@
     "@nestjs/platform-express": "^8.0.0",
     "@nestjs/swagger": "^5.0.9",
     "@nestjs/typeorm": "^8.0.2",
+    "@types/bluebird": "^3.5.36",
     "bluebird": "^3.7.2",
     "nest-puppeteer": "^1.1.1",
     "pg": "^8.7.1",

@@ -39,15 +39,20 @@ export class JobsController {
 
   @Get()
   findAll() {
-    let jobs = this.jobsService.scrape();
     return this.jobsService.findAll();
   }
 
   @Get('/scrape/')
   async scrapeAndPersist() {
-    // let test = await scrape();
-    return console.log(await this.jobsService.scrape());
-    // return this.jobsService.createFromScrape(await scrape());
+    let test = await this.jobsService.scrape(
+      'software developer',
+      'washington',
+    );
+    console.log('pages scraped' + test.length);
+    test.forEach((test) => {
+      console.log('jobs per page' + test.length);
+    });
+    console.log(test);
   }
 
   @Get(':id')
