@@ -17,10 +17,10 @@ import { Fields } from './enums/Fields.enum';
 export class JobsController {
   constructor(private readonly jobsService: JobsService) {}
 
-  @Post()
-  create(@Body() createJobDto: CreateJobDto) {
-    return this.jobsService.create(createJobDto);
-  }
+  // @Post()
+  // create(@Body() createJobDto: CreateJobDto) {
+  //   return this.jobsService.create(createJobDto);
+  // }
 
   @Get('/company/:company')
   findAllByCompany(@Param('company') company: string) {
@@ -44,15 +44,10 @@ export class JobsController {
 
   @Get('/scrape/')
   async scrapeAndPersist() {
-    let test = await this.jobsService.scrape(
-      'software developer',
+    return await this.jobsService.PersistFromScrape(
+      'graphic designer',
       'washington',
     );
-    console.log('pages scraped' + test.length);
-    test.forEach((test) => {
-      console.log('jobs per page' + test.length);
-    });
-    console.log(test);
   }
 
   @Get(':id')

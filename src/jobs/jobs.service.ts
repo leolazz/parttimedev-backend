@@ -9,10 +9,7 @@ import { Company } from './entities/company.entity';
 import { Job } from './entities/job.entity';
 import { Fields } from './enums/Fields.enum';
 import { InjectBrowser } from 'nest-puppeteer';
-import { Page, Browser, ElementHandle, Puppeteer } from 'puppeteer';
-import * as puppeteer from 'puppeteer';
-import e from 'express';
-import { off } from 'process';
+import { Page, Browser } from 'puppeteer';
 
 @Injectable()
 export class JobsService {
@@ -31,24 +28,10 @@ export class JobsService {
     return url;
   }
 
-  async getPageUrls() {}
-
-  private correctIncome(
-    results: NodeListOf<HTMLAnchorElement>,
-    incomeCondition: NodeListOf<Element>,
-    income: NodeListOf<Element>,
-  ) {
-    let correctedIncome: string[] = [];
-    let incomeCounter = 0;
-    for (let i = 0; i < results.length; i++) {
-      if (incomeCondition[i].childElementCount === 4) {
-        correctedIncome.push(income[incomeCounter].textContent);
-        incomeCounter++;
-      } else {
-        correctedIncome.push('Not Available');
-      }
-    }
-    return correctedIncome;
+  async PersistFromScrape(job: string, location: string) {
+    const createJobDtoArray = await this.scrape(job, location);
+    const jobs = this.jobRepository.create(createJobDtoArray);
+    return this.jobRepository.save(jobs);
   }
 
   async parseResults(page: Page) {
@@ -64,6 +47,7 @@ export class JobsService {
       const incomeCondition = document.querySelectorAll('td.resultContent');
       const jobDescription = document.querySelectorAll('div.job-snippet');
       const income = document.querySelectorAll('span.salary-snippet');
+      const dateTime = new Date().toLocaleDateString();
       let correctedIncome: string[] = [];
       let incomeCounter = 0;
       for (let i = 0; i < linksNodeList.length; i++) {
@@ -74,10 +58,10 @@ export class JobsService {
           correctedIncome.push('Not Available');
         }
       }
-      let jobArray = [];
+      let jobArray: CreateJobDto[] = [];
       for (let i = 0; i < linksNodeList.length; i++) {
         jobArray[i] = {
-          id: i,
+          // id: i,
           title: title[i].textContent.trim(),
           field: search.value,
           company: company[i].textContent.trim(),
@@ -87,6 +71,7 @@ export class JobsService {
             .replace(/\n|\r/g, ''),
           income: correctedIncome[i],
           link: linksNodeList[i].href,
+          date: dateTime,
         };
       }
       return jobArray;
@@ -97,125 +82,60 @@ export class JobsService {
   async scrape(job: string, location: string) {
     const page = await this.browser.newPage();
     await page.setViewport({ width: 0, height: 0 });
-    // const browser = await puppeteer.launch({
-    //   headless: false,
-    //   defaultViewport: null,
-    // });
-    // const page = await browser.newPage();
     let url = this.SearchUrlBuilder(job, location);
     let baseUrl = url;
     await page.goto(url, {
       waitUntil: 'domcontentloaded',
     });
-    let numberOfResults = await page.$eval(
-      '#searchCountPages',
-      (el: HTMLSpanElement) =>
-        el.innerText.trim().replace('Page 1 of ', '').replace(' jobs', ''),
-    );
-    console.log(numberOfResults);
-    let floatingPointPageNumber = parseInt(numberOfResults, 10) / 15;
-    console.log(floatingPointPageNumber);
-    let numberOfPages = Math.round(floatingPointPageNumber);
-    console.log(numberOfPages);
+    let numberOfResults = await this.getNumberOfResults(page);
+    let numberOfPages = Math.round(parseInt(numberOfResults, 10) / 15);
     let offset = 0;
-    let pages = [];
+    let pages: CreateJobDto[][] = [];
     for (let i = 0; i < numberOfPages; i++) {
       offset === 0 ? (url = url) : (url = baseUrl + `&start=${offset}`);
       await page.goto(url, {
         waitUntil: 'domcontentloaded',
       });
-      // console.log(url);
-      console.log(page.url());
       await page.waitForSelector('span.salary-snippet');
       pages[i] = await this.parseResults(page);
       offset = offset + 10;
     }
-
-    // await page.exposeFunction('correctIncome', this.correctIncome);
-    // let offset = 0;
-    // for (let i = 0; i < numberOfPages; i++) {
-    //   offset === 0 ? (url = url) : (url = url + `&start=${offset}`);
-    //   await page.goto(url, {
-    //     waitUntil: 'domcontentloaded',
-    //   });
-    //   await page.waitForSelector('span.salary-snippet');
-    //   pages[i] = await this.parseResults(page);
-    //   offset = offset + 10;
-    // }
-    return pages;
+    return this.refactorJobArray(pages);
   }
 
-  // async scrape(job: string, location: string) {
-  //   return new Promise<any[]>(async (resolve, reject) => {
-  //     try {
-  //       const page = await this.browser.newPage();
-  //       await page.goto(this.SearchUrlBuilder(job, location), {
-  //         waitUntil: 'domcontentloaded',
-  //       });
-  //       await page.waitForSelector('span.salary-snippet');
-  //       await page.exposeFunction('correctIncome', this.correctIncome);
-  //       let jobs = await page.evaluate(async () => {
-  //         const search: HTMLInputElement =
-  //           document.querySelector('#text-input-what');
-  //         const container = document.querySelector('#resultsCol');
-  //         const linksNodeList: NodeListOf<HTMLAnchorElement> =
-  //           container.querySelectorAll('a[id^="job_"], a[id^="sj_"]');
-  //         const title = document.querySelectorAll('h2.jobTitle > span');
-  //         const company = document.querySelectorAll('span.companyName');
-  //         const location = document.querySelectorAll('div.companyLocation');
-  //         const incomeCondition = document.querySelectorAll('td.resultContent');
-  //         const jobDescription = document.querySelectorAll('div.job-snippet');
-  //         const income = document.querySelectorAll('span.salary-snippet');
-  //         let correctedIncome = this.correctIncome(
-  //           linksNodeList,
-  //           incomeCondition,
-  //           income,
-  //         );
+  private async getNumberOfResults(page: Page) {
+    let numberOfResults = await page.$eval(
+      '#searchCountPages',
+      (el: HTMLSpanElement) =>
+        el.innerText.trim().replace('Page 1 of ', '').replace(' jobs', ''),
+    );
+    return numberOfResults;
+  }
 
-  //         let jobArray = [];
-  //         for (let i = 0; i < linksNodeList.length; i++) {
-  //           jobArray[i] = {
-  //             id: i,
-  //             title: title[i].textContent.trim(),
-  //             field: search.value,
-  //             company: company[i].textContent.trim(),
-  //             location: location[i].textContent.trim(),
-  //             description: jobDescription[i].textContent
-  //               .trim()
-  //               .replace(/\n|\r/g, ''),
-  //             income: correctedIncome[i],
-  //             link: linksNodeList[i].href,
-  //           };
-  //         }
-  //         return jobArray;
-  //       });
-  //       this.browser.close();
-  //       return resolve(jobs);
-  //     } catch (e) {
-  //       return reject(e);
-  //     }
-  //   });
+  private refactorJobArray(pages: CreateJobDto[][]) {
+    let final: CreateJobDto[] = [...pages[0], ...pages[1], ...pages[2]];
+    return final;
+  }
+
+  // private async preloadCompanyByName(company: Company): Promise<Company> {
+  //   const existingCompany = await this.companyRepository.findOne(company);
+  //   if (existingCompany) {
+  //     return existingCompany;
+  //   }
+  //   return this.companyRepository.create(company);
   // }
 
-  private async preloadCompanyByName(company: Company): Promise<Company> {
-    const existingCompany = await this.companyRepository.findOne(company);
-    if (existingCompany) {
-      return existingCompany;
-    }
-    return this.companyRepository.create(company);
-  }
-
-  async create(createJobDto: CreateJobDto) {
-    const company = await this.preloadCompanyByName(createJobDto.company);
-    if (company) {
-      createJobDto.company = company;
-    }
-    const job = this.jobRepository.create(createJobDto);
-    return this.jobRepository.save(job);
-  }
+  // async create(createJobDto: CreateJobDto) {
+  //   const company = await this.preloadCompanyByName(createJobDto.company);
+  //   if (company) {
+  //     createJobDto.company = company;
+  //   }
+  //   const job = this.jobRepository.create(createJobDto);
+  //   return this.jobRepository.save(job);
+  // }
 
   findAll() {
-    return this.jobRepository.find({ relations: ['company'] });
+    return this.jobRepository.find();
   }
 
   findAllByCompany(company: string) {
