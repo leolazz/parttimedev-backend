@@ -1,14 +1,4 @@
-import { type } from 'os';
-import {
-  Column,
-  Entity,
-  OneToOne,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-  JoinColumn,
-} from 'typeorm';
-import { Fields } from '../enums/Fields.enum';
-import { Company } from './company.entity';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class Job {
@@ -27,11 +17,6 @@ export class Job {
   @Column()
   income: string;
 
-  // @ManyToOne(() => Company, company => company.jobs,
-  // {
-  //   cascade: true,
-  //   eager: true
-  // })
   @Column()
   company: string;
 

@@ -1,13 +1,8 @@
-import { Injectable, NotFoundException, Post } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { stringify } from 'querystring';
-import { combineAll } from 'rxjs';
 import { Repository } from 'typeorm';
 import { CreateJobDto } from './dto/create-job.dto';
-import { UpdateJobDto } from './dto/update-job.dto';
-import { Company } from './entities/company.entity';
 import { Job } from './entities/job.entity';
-import { Fields } from './enums/Fields.enum';
 import { InjectBrowser } from 'nest-puppeteer';
 import { Page, Browser } from 'puppeteer';
 
@@ -17,9 +12,8 @@ export class JobsService {
     @InjectRepository(Job)
     private readonly jobRepository: Repository<Job>,
 
-    @InjectRepository(Company)
-    private readonly companyRepository: Repository<Company>,
-    @InjectBrowser() private readonly browser: Browser,
+    @InjectBrowser()
+    private readonly browser: Browser,
   ) {}
 
   private SearchUrlBuilder(job: string, location: string) {
@@ -61,7 +55,6 @@ export class JobsService {
       let jobArray: CreateJobDto[] = [];
       for (let i = 0; i < linksNodeList.length; i++) {
         jobArray[i] = {
-          // id: i,
           title: title[i].textContent.trim(),
           field: search.value,
           company: company[i].textContent.trim(),
@@ -79,28 +72,38 @@ export class JobsService {
     return jobs;
   }
 
-  async scrape(job: string, location: string) {
-    const page = await this.browser.newPage();
-    await page.setViewport({ width: 0, height: 0 });
-    let url = this.SearchUrlBuilder(job, location);
+  private async handlePagination(page: Page) {
+    let url = await page.url();
     let baseUrl = url;
-    await page.goto(url, {
-      waitUntil: 'domcontentloaded',
-    });
     let numberOfResults = await this.getNumberOfResults(page);
     let numberOfPages = Math.round(parseInt(numberOfResults, 10) / 15);
     let offset = 0;
     let pages: CreateJobDto[][] = [];
-    for (let i = 0; i < numberOfPages; i++) {
-      offset === 0 ? (url = url) : (url = baseUrl + `&start=${offset}`);
-      await page.goto(url, {
-        waitUntil: 'domcontentloaded',
-      });
-      await page.waitForSelector('span.salary-snippet');
-      pages[i] = await this.parseResults(page);
-      offset = offset + 10;
+
+    if (numberOfPages <= 1) {
+      let jobs: CreateJobDto[] = await this.parseResults(page);
+      return jobs;
+    } else {
+      for (let i = 0; i < numberOfPages; i++) {
+        offset === 0 ? (url = url) : (url = baseUrl + `&start=${offset}`);
+        await page.goto(url, {
+          waitUntil: 'domcontentloaded',
+        });
+        await page.waitForSelector('span.salary-snippet');
+        pages[i] = await this.parseResults(page);
+        offset = offset + 10;
+      }
+      return this.refactorJobArray(pages);
     }
-    return this.refactorJobArray(pages);
+  }
+
+  async scrape(job: string, location: string) {
+    const page = await this.browser.newPage();
+    await page.setViewport({ width: 0, height: 0 });
+    await page.goto(this.SearchUrlBuilder(job, location), {
+      waitUntil: 'domcontentloaded',
+    });
+    return await this.handlePagination(page);
   }
 
   private async getNumberOfResults(page: Page) {
@@ -113,26 +116,19 @@ export class JobsService {
   }
 
   private refactorJobArray(pages: CreateJobDto[][]) {
-    let final: CreateJobDto[] = [...pages[0], ...pages[1], ...pages[2]];
+    let final: CreateJobDto[] = [];
+    for (let i = 0; i < pages.length; i++) {
+      pages[i].forEach((job) => {
+        final.push(job);
+      });
+    }
     return final;
   }
 
-  // private async preloadCompanyByName(company: Company): Promise<Company> {
-  //   const existingCompany = await this.companyRepository.findOne(company);
-  //   if (existingCompany) {
-  //     return existingCompany;
-  //   }
-  //   return this.companyRepository.create(company);
-  // }
-
-  // async create(createJobDto: CreateJobDto) {
-  //   const company = await this.preloadCompanyByName(createJobDto.company);
-  //   if (company) {
-  //     createJobDto.company = company;
-  //   }
-  //   const job = this.jobRepository.create(createJobDto);
-  //   return this.jobRepository.save(job);
-  // }
+  create(createJobDto: CreateJobDto) {
+    const job = this.jobRepository.create(createJobDto);
+    return this.jobRepository.save(job);
+  }
 
   findAll() {
     return this.jobRepository.find();
@@ -142,7 +138,7 @@ export class JobsService {
     return this.jobRepository.find({ where: { company: company } });
   }
 
-  findAllByField(field: Fields) {
+  findAllByField(field: string) {
     return this.jobRepository.find({ where: { field: field } });
   }
 
@@ -158,10 +154,6 @@ export class JobsService {
       throw new NotFoundException(`Job #${id} not found`);
     }
     return job;
-  }
-
-  update(id: number, updateJobDto: UpdateJobDto) {
-    return `This action updates a #${id} job`;
   }
 
   remove(id: number) {
