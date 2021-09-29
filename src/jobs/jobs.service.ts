@@ -5,6 +5,7 @@ import { CreateJobDto } from './dto/create-job.dto';
 import { Job } from './entities/job.entity';
 import { InjectBrowser } from 'nest-puppeteer';
 import { Page, Browser } from 'puppeteer';
+import { softwareDeveloper } from './searchTerms';
 
 @Injectable()
 export class JobsService {
@@ -22,9 +23,28 @@ export class JobsService {
     return url;
   }
 
+  private addAdditionalSearchterms(search: string, searchTerms: string[]) {
+    const completeSearchTerms: string[] = [];
+    if (search.toLowerCase() === 'software developer') {
+      completeSearchTerms.concat(softwareDeveloper);
+      return completeSearchTerms;
+    }
+  }
+
+  private filterForRelevantJobs(
+    createJobDtoArray: CreateJobDto[],
+    job: string,
+  ) {
+    let searchTermArray = job.split(' ');
+    searchTermArray = this.addAdditionalSearchterms(job, searchTermArray);
+
+    const search = new RegExp('remote', 'i');
+    const filtered: CreateJobDto[] = [];
+  }
+
   private addRemoteBoolean(createJobDtoArray: CreateJobDto[]) {
-    let remote = new RegExp('remote', 'i');
-    let remoteChecked: CreateJobDto[] = [];
+    const remote = new RegExp('remote', 'i');
+    const remoteChecked: CreateJobDto[] = [];
     for (let i = 0; i < createJobDtoArray.length; i++) {
       let createJobDto: CreateJobDto = createJobDtoArray[i];
       if (createJobDtoArray[i].location.search(remote) === -1) {
