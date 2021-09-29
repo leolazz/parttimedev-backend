@@ -24,6 +24,12 @@ export class Job {
   location: string;
 
   @Column()
+  searchedLocation: string;
+
+  @Column()
+  isRemote: boolean;
+
+  @Column()
   link: string;
 
   @Column()

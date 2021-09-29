@@ -22,16 +22,32 @@ export class JobsService {
     return url;
   }
 
+  private addRemoteBoolean(createJobDtoArray: CreateJobDto[]) {
+    let remote = new RegExp('remote', 'i');
+    let remoteChecked: CreateJobDto[] = [];
+    for (let i = 0; i < createJobDtoArray.length; i++) {
+      let createJobDto: CreateJobDto = createJobDtoArray[i];
+      if (createJobDtoArray[i].location.search(remote) === -1) {
+        createJobDto.isRemote = false;
+      } else createJobDto.isRemote = true;
+      remoteChecked.push(createJobDto);
+    }
+    return remoteChecked;
+  }
+
   async PersistFromScrape(job: string, location: string) {
-    const createJobDtoArray = await this.scrape(job, location);
+    let createJobDtoArray = await this.scrape(job, location);
+    createJobDtoArray = this.addRemoteBoolean(createJobDtoArray);
     const jobs = this.jobRepository.create(createJobDtoArray);
     return this.jobRepository.save(jobs);
   }
 
   async parseResults(page: Page) {
     let jobs = await page.evaluate(async () => {
-      const search: HTMLInputElement =
+      const searchWhat: HTMLInputElement =
         document.querySelector('#text-input-what');
+      const searchWhere: HTMLInputElement =
+        document.querySelector('#text-input-where');
       const container = document.querySelector('#resultsCol');
       const linksNodeList: NodeListOf<HTMLAnchorElement> =
         container.querySelectorAll('a[id^="job_"], a[id^="sj_"]');
@@ -56,9 +72,10 @@ export class JobsService {
       for (let i = 0; i < linksNodeList.length; i++) {
         jobArray[i] = {
           title: title[i].textContent.trim(),
-          field: search.value,
+          field: searchWhat.value,
           company: company[i].textContent.trim(),
           location: location[i].textContent.trim(),
+          searchedLocation: searchWhere.value,
           description: jobDescription[i].textContent
             .trim()
             .replace(/\n|\r/g, ''),

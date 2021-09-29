@@ -11,6 +11,10 @@ export class CreateJobDto {
 
   location: string;
 
+  searchedLocation: string;
+
+  isRemote?: boolean;
+
   link: string;
 
   date: string;
