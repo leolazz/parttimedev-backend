@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete } from '@nestjs/common';
 import { JobsService } from './jobs.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { ApiTags } from '@nestjs/swagger';
@@ -43,8 +35,8 @@ export class JobsController {
   @Get('/scrape/')
   async scrapeAndPersist() {
     return await this.jobsService.PersistFromScrape(
-      'back end developer',
-      'California',
+      'software developer',
+      'washington',
     );
   }
 
