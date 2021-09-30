@@ -25,7 +25,7 @@ export class JobsService {
 
   private addAdditionalSearchterms(search: string, searchTerms: string[]) {
     const completeSearchTerms: string[] = [];
-    if (search.toLowerCase() === 'software developer') {
+    if (search.toLowerCase().includes('developer')) {
       completeSearchTerms.concat(softwareDeveloper);
       return completeSearchTerms;
     }
