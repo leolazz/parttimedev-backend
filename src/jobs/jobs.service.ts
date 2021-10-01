@@ -5,6 +5,7 @@ import { CreateJobDto } from './dto/create-job.dto';
 import { Job } from './entities/job.entity';
 import { InjectBrowser } from 'nest-puppeteer';
 import { Page, Browser } from 'puppeteer';
+import { softwareDeveloper, uxui } from './searchTerms';
 
 @Injectable()
 export class JobsService {
@@ -22,9 +23,42 @@ export class JobsService {
     return url;
   }
 
+  private addAdditionalSearchTerms(search: string) {
+    let completeSearchTerms: string[] = search.split(' ');
+    if (search.includes('developer')) {
+      completeSearchTerms = completeSearchTerms.concat(softwareDeveloper);
+    }
+    if (search.includes('ux ui')) {
+      completeSearchTerms = completeSearchTerms.concat(softwareDeveloper);
+    }
+    return completeSearchTerms;
+  }
+
+  private filterForRelevantJobs(
+    createJobDtoArray: CreateJobDto[],
+    job: string,
+  ) {
+    const removedJobs: CreateJobDto[] = [];
+    const filteredJobs: CreateJobDto[] = [];
+    let searchTermArray = this.addAdditionalSearchTerms(job);
+    for (let i = 0; i < createJobDtoArray.length; i++) {
+      let test = searchTermArray.some((term) => {
+        return createJobDtoArray[i].title.toLowerCase().includes(term);
+      });
+      if (test) filteredJobs.push(createJobDtoArray[i]);
+      else removedJobs.push(createJobDtoArray[i]);
+    }
+    // to verify results being filtered out
+    removedJobs.forEach((job) => {
+      console.log(job.title);
+    });
+    console.log(removedJobs.length);
+    return filteredJobs;
+  }
+
   private addRemoteBoolean(createJobDtoArray: CreateJobDto[]) {
-    let remote = new RegExp('remote', 'i');
-    let remoteChecked: CreateJobDto[] = [];
+    const remote = new RegExp('remote', 'i');
+    const remoteChecked: CreateJobDto[] = [];
     for (let i = 0; i < createJobDtoArray.length; i++) {
       let createJobDto: CreateJobDto = createJobDtoArray[i];
       if (createJobDtoArray[i].location.search(remote) === -1) {
@@ -37,6 +71,7 @@ export class JobsService {
 
   async PersistFromScrape(job: string, location: string) {
     let createJobDtoArray = await this.scrape(job, location);
+    createJobDtoArray = this.filterForRelevantJobs(createJobDtoArray, job);
     createJobDtoArray = this.addRemoteBoolean(createJobDtoArray);
     const jobs = this.jobRepository.create(createJobDtoArray);
     return this.jobRepository.save(jobs);
