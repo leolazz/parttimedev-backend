@@ -23,7 +23,7 @@ const softwareDeveloper: string[] = [
   'react',
   '.net',
   'java',
-  'c',
+  ' c ',
   'c#',
   'c++',
   'javascript',
@@ -39,6 +39,11 @@ const softwareDeveloper: string[] = [
   'rest',
   'api',
   'ionic',
+  'sql',
+  'development',
+  'node.js',
+  'js',
+  'wordpress',
 ];
 
 // search term: graphic designer
@@ -47,4 +52,4 @@ const graphicDesiner: string[] = [' '];
 // search term: graphic designer
 const uxui: string[] = ['ux/ui', 'user experience', 'user interface'];
 
-export { softwareDeveloper, graphicDesiner };
+export { softwareDeveloper, graphicDesiner, uxui };
