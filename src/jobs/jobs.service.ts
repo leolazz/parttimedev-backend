@@ -23,7 +23,7 @@ export class JobsService {
     return url;
   }
 
-  private addAdditionalSearchterms(search: string) {
+  private addAdditionalSearchTerms(search: string) {
     let completeSearchTerms: string[] = search.split(' ');
     if (search.includes('developer')) {
       completeSearchTerms = completeSearchTerms.concat(softwareDeveloper);
@@ -40,7 +40,7 @@ export class JobsService {
   ) {
     const removedJobs: CreateJobDto[] = [];
     const filteredJobs: CreateJobDto[] = [];
-    let searchTermArray = this.addAdditionalSearchterms(job);
+    let searchTermArray = this.addAdditionalSearchTerms(job);
     for (let i = 0; i < createJobDtoArray.length; i++) {
       let test = searchTermArray.some((term) => {
         return createJobDtoArray[i].title.toLowerCase().includes(term);
@@ -48,6 +48,11 @@ export class JobsService {
       if (test) filteredJobs.push(createJobDtoArray[i]);
       else removedJobs.push(createJobDtoArray[i]);
     }
+    // to verify results being filtered out
+    removedJobs.forEach((job) => {
+      console.log(job.title);
+    });
+    console.log(removedJobs.length);
     return filteredJobs;
   }
 
