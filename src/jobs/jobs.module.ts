@@ -3,11 +3,10 @@ import { JobsService } from './jobs.service';
 import { JobsController } from './jobs.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Job } from './entities/job.entity';
-import { PuppeteerModule } from 'nest-puppeteer';
 import Puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 @Module({
-  imports: [TypeOrmModule.forFeature([Job]), PuppeteerModule.forRoot()],
+  imports: [TypeOrmModule.forFeature([Job])],
   controllers: [JobsController],
   providers: [
     JobsService,

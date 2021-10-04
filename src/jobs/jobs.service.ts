@@ -13,11 +13,11 @@ export class JobsService {
     private readonly jobRepository: Repository<Job>,
 
     @Inject('PuppeteerStealth')
-    private readonly puppeteer: Browser,
+    private readonly Browser: Browser,
   ) {}
 
   async scrape(job: string, location: string) {
-    const page = await this.puppeteer.newPage();
+    const page = await this.Browser.newPage();
     await page.setViewport({ width: 0, height: 0 });
     await page.goto(this.SearchUrlBuilder(job, location), {
       waitUntil: 'domcontentloaded',
