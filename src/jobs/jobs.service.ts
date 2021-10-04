@@ -1,11 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateJobDto } from './dto/create-job.dto';
 import { Job } from './entities/job.entity';
-import { InjectBrowser } from 'nest-puppeteer';
-import { Page, Browser } from 'puppeteer';
-import { softwareDeveloper, uxui } from './searchTerms';
+import { softwareDeveloper } from './searchTerms';
+import { Browser, Page } from 'puppeteer-extra-plugin/dist/puppeteer';
 
 @Injectable()
 export class JobsService {
@@ -13,9 +12,18 @@ export class JobsService {
     @InjectRepository(Job)
     private readonly jobRepository: Repository<Job>,
 
-    @InjectBrowser()
-    private readonly browser: Browser,
+    @Inject('PuppeteerStealth')
+    private readonly puppeteer: Browser,
   ) {}
+
+  async scrape(job: string, location: string) {
+    const page = await this.puppeteer.newPage();
+    await page.setViewport({ width: 0, height: 0 });
+    await page.goto(this.SearchUrlBuilder(job, location), {
+      waitUntil: 'domcontentloaded',
+    });
+    return await this.handlePagination(page);
+  }
 
   private SearchUrlBuilder(job: string, location: string) {
     const jobSearch = job.trim().replace(' ', '%20');
@@ -147,15 +155,6 @@ export class JobsService {
       }
       return this.refactorJobArray(pages);
     }
-  }
-
-  async scrape(job: string, location: string) {
-    const page = await this.browser.newPage();
-    await page.setViewport({ width: 0, height: 0 });
-    await page.goto(this.SearchUrlBuilder(job, location), {
-      waitUntil: 'domcontentloaded',
-    });
-    return await this.handlePagination(page);
   }
 
   private async getNumberOfResults(page: Page) {
