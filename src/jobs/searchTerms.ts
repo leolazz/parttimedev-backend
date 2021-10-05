@@ -1,4 +1,22 @@
-const BasefieldSearches: string[] = [
+enum baseFieldSearches {
+  softwareDeveloper = 'software developer',
+  backEndDeveloper = 'back end developer',
+  frontEndDevloper = 'front end devloper',
+  graphicDesigner = 'graphic designer',
+  uxUi = 'ux ui',
+  dataAnalytics = 'data analytics',
+}
+
+enum locationSearches {
+  washington = 'washington',
+  seattle = 'seattle',
+  bellevue = 'bellevue',
+  california = 'california',
+  sanFrancisco = 'san francisco',
+  la = 'la',
+}
+
+const BasefieldSearchesArray: string[] = [
   'software developer',
   'back end developer',
   'front end devloper',
@@ -7,14 +25,7 @@ const BasefieldSearches: string[] = [
   'data analytics',
 ];
 
-const locationSearches: string[] = [
-  'washington',
-  'seattle',
-  'bellevue',
-  'california',
-  'san francisco',
-  'la',
-];
+const locationSearchesArray: string[] = ['washington', 'california'];
 
 // search term: software developer
 const softwareDeveloper: string[] = [
@@ -52,4 +63,12 @@ const graphicDesiner: string[] = [' '];
 // search term: graphic designer
 const uxui: string[] = ['ux/ui', 'user experience', 'user interface'];
 
-export { softwareDeveloper, graphicDesiner, uxui };
+export {
+  softwareDeveloper,
+  graphicDesiner,
+  uxui,
+  locationSearches,
+  baseFieldSearches,
+  locationSearchesArray,
+  BasefieldSearchesArray,
+};

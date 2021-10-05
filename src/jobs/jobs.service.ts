@@ -3,8 +3,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateJobDto } from './dto/create-job.dto';
 import { Job } from './entities/job.entity';
-import { softwareDeveloper } from './searchTerms';
+import {
+  baseFieldSearches,
+  BasefieldSearchesArray,
+  locationSearches,
+  locationSearchesArray,
+  softwareDeveloper,
+} from './searchTerms';
 import { Browser, Page } from 'puppeteer-extra-plugin/dist/puppeteer';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { setTimeout } from 'timers/promises';
 
 @Injectable()
 export class JobsService {
@@ -15,6 +23,33 @@ export class JobsService {
     @Inject('PuppeteerStealth')
     private readonly Browser: Browser,
   ) {}
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  private cronScrape() {
+    const scrapeAndPurgeNeeded = this.checkLastScrapeDate();
+    if (scrapeAndPurgeNeeded) {
+      locationSearchesArray.forEach((location) => {
+        for (let i = 0; i <= BasefieldSearchesArray.length; i++) {
+          this.PersistFromScrape(BasefieldSearchesArray[i], location);
+        }
+      });
+    }
+  }
+
+  private async checkLastScrapeDate() {
+    const job = await this.jobRepository.findOne({
+      where: { field: baseFieldSearches.softwareDeveloper },
+    });
+    if (this.getDateDifference(job.date) >= 7) return true;
+    else return false;
+  }
+
+  private getDateDifference(jobDateString: string) {
+    const currentDate = new Date();
+    const jobDate = new Date(jobDateString);
+    const difference = jobDate.getTime() - currentDate.getTime();
+    return Math.ceil(difference / (1000 * 3600 * 24));
+  }
 
   async scrape(job: string, location: string) {
     const page = await this.Browser.newPage();
@@ -100,7 +135,7 @@ export class JobsService {
       const incomeCondition = document.querySelectorAll('td.resultContent');
       const jobDescription = document.querySelectorAll('div.job-snippet');
       const income = document.querySelectorAll('span.salary-snippet');
-      const dateTime = new Date().toLocaleDateString();
+      const utcDate = new Date().toUTCString();
       let correctedIncome: string[] = [];
       let incomeCounter = 0;
       for (let i = 0; i < linksNodeList.length; i++) {
@@ -124,7 +159,7 @@ export class JobsService {
             .replace(/\n|\r/g, ''),
           income: correctedIncome[i],
           link: linksNodeList[i].href,
-          date: dateTime,
+          date: utcDate,
         };
       }
       return jobArray;
@@ -198,15 +233,12 @@ export class JobsService {
   }
 
   async findOne(id: number) {
-    const job = await this.jobRepository.findOne(id, {
-      relations: ['company'],
-    });
+    const job = await this.jobRepository.findOne(id);
     if (!job) {
       throw new NotFoundException(`Job #${id} not found`);
     }
     return job;
   }
-
   remove(id: number) {
     return `This action removes a #${id} job`;
   }
