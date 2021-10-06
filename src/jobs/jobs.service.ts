@@ -6,14 +6,12 @@ import { Job } from './entities/job.entity';
 import {
   baseFieldSearches,
   BasefieldSearchesArray,
-  locationSearches,
   locationSearchesArray,
   softwareDeveloper,
 } from './searchTerms';
 import { Browser, Page } from 'puppeteer-extra-plugin/dist/puppeteer';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { setTimeout } from 'timers/promises';
-import { job } from 'cron';
 
 @Injectable()
 export class JobsService {
@@ -34,6 +32,7 @@ export class JobsService {
       locationSearchesArray.forEach((location) => {
         for (let i = 0; i <= BasefieldSearchesArray.length; i++) {
           this.PersistFromScrape(BasefieldSearchesArray[i], location);
+          setTimeout(120000);
         }
       });
     }
