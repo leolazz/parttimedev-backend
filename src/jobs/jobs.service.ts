@@ -1,6 +1,6 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Entity, getConnection, Repository } from 'typeorm';
 import { CreateJobDto } from './dto/create-job.dto';
 import { Job } from './entities/job.entity';
 import {
@@ -13,6 +13,7 @@ import {
 import { Browser, Page } from 'puppeteer-extra-plugin/dist/puppeteer';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { setTimeout } from 'timers/promises';
+import { job } from 'cron';
 
 @Injectable()
 export class JobsService {
@@ -25,9 +26,11 @@ export class JobsService {
   ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  private cronScrape() {
+  private async cronScrape() {
     const scrapeAndPurgeNeeded = this.checkLastScrapeDate();
     if (scrapeAndPurgeNeeded) {
+      await this.jobRepository.clear();
+      const ids = await this.jobRepository.find();
       locationSearchesArray.forEach((location) => {
         for (let i = 0; i <= BasefieldSearchesArray.length; i++) {
           this.PersistFromScrape(BasefieldSearchesArray[i], location);
