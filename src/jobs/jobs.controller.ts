@@ -42,7 +42,7 @@ export class JobsController {
   async scrapeAndPersist() {
     return await this.jobsService.PersistFromScrape(
       baseFieldSearches.softwareDeveloper,
-      locationSearches.california,
+      locationSearches.washington,
     );
   }
   @Get('/test/')

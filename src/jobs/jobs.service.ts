@@ -13,6 +13,7 @@ import { Browser, Page } from 'puppeteer-extra-plugin/dist/puppeteer';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { setTimeout } from 'timers/promises';
 import { PuppeteerExtra } from 'puppeteer-extra';
+import userAgent from 'user-agents';
 
 @Injectable()
 export class JobsService {
@@ -101,6 +102,7 @@ export class JobsService {
     //   args: ['--incognito'],
     // });
     const page = await this.browser.newPage();
+    await page.setUserAgent(userAgent.toString());
     await page.setViewport({ width: 0, height: 0 });
     await page.goto(this.SearchUrlBuilder(job, location), {
       waitUntil: 'domcontentloaded',
