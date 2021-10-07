@@ -96,10 +96,10 @@ export class JobsService {
   }
 
   async scrape(job: string, location: string) {
-    this.browser = await this.puppeteer.launch({
-      headless: false,
-      args: ['--incognito'],
-    });
+    // this.browser = await this.puppeteer.launch({
+    //   headless: false,
+    //   args: ['--incognito'],
+    // });
     const page = await this.browser.newPage();
     await page.setViewport({ width: 0, height: 0 });
     await page.goto(this.SearchUrlBuilder(job, location), {
