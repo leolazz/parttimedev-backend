@@ -55,6 +55,8 @@ const softwareDeveloper: string[] = [
   'node.js',
   'js',
   'wordpress',
+  'devops',
+  'dev ops',
 ];
 
 // search term: graphic designer

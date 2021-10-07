@@ -2,6 +2,12 @@ import { Controller, Get, Post, Body, Param, Delete } from '@nestjs/common';
 import { JobsService } from './jobs.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { ApiTags } from '@nestjs/swagger';
+import {
+  baseFieldSearches,
+  BasefieldSearchesArray,
+  locationSearches,
+  locationSearchesArray,
+} from './searchTerms';
 @ApiTags('jobs')
 @Controller('jobs')
 export class JobsController {
@@ -35,9 +41,13 @@ export class JobsController {
   @Get('/scrape/')
   async scrapeAndPersist() {
     return await this.jobsService.PersistFromScrape(
-      'software developer',
-      'washington',
+      baseFieldSearches.softwareDeveloper,
+      locationSearches.california,
     );
+  }
+  @Get('/test/')
+  async TestscrapeAndPersist() {
+    return await this.jobsService.cronScrape();
   }
 
   @Get(':id')

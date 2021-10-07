@@ -4,6 +4,7 @@ import { JobsService } from './jobs.service';
 
 describe('JobsController', () => {
   let controller: JobsController;
+  let jobsService: JobsService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -12,6 +13,7 @@ describe('JobsController', () => {
     }).compile();
 
     controller = module.get<JobsController>(JobsController);
+    jobsService = module.get<JobsService>(JobsService);
   });
 
   it('should be defined', () => {

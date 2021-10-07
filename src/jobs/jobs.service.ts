@@ -1,6 +1,6 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Entity, getConnection, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { CreateJobDto } from './dto/create-job.dto';
 import { Job } from './entities/job.entity';
 import {
@@ -12,6 +12,7 @@ import {
 import { Browser, Page } from 'puppeteer-extra-plugin/dist/puppeteer';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { setTimeout } from 'timers/promises';
+import { PuppeteerExtra } from 'puppeteer-extra';
 
 @Injectable()
 export class JobsService {
@@ -20,29 +21,70 @@ export class JobsService {
     private readonly jobRepository: Repository<Job>,
 
     @Inject('PuppeteerStealth')
-    private readonly Browser: Browser,
+    private readonly puppeteer: PuppeteerExtra,
   ) {}
-
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  private async cronScrape() {
-    const scrapeAndPurgeNeeded = this.checkLastScrapeDate();
+  private browser: Browser;
+  // @Cron(CronExpression.EVERY_10_MINUTES)
+  async cronScrape() {
+    this.browser = await this.puppeteer.launch();
+    const scrapeAndPurgeNeeded = true;
+    // await this.checkLastScrapeDate();
+    console.log(scrapeAndPurgeNeeded);
     if (scrapeAndPurgeNeeded) {
       await this.jobRepository.clear();
-      const ids = await this.jobRepository.find();
-      locationSearchesArray.forEach((location) => {
-        for (let i = 0; i <= BasefieldSearchesArray.length; i++) {
-          this.PersistFromScrape(BasefieldSearchesArray[i], location);
-          setTimeout(120000);
+
+      // for (let i = 0; i < locationSearchesArray.length; i++) {
+      //   for (let i = 0; i < locationSearchesArray.length; i++) {}
+      // }
+
+      // await locationSearchesArray.forEach(async (location) => {
+      //   await this.PersistFromScrape(
+      //     baseFieldSearches.softwareDeveloper,
+      //     location,
+      //   );
+      //   await this.PersistFromScrape(
+      //     baseFieldSearches.backEndDeveloper,
+      //     location,
+      //   );
+      //   await this.PersistFromScrape(baseFieldSearches.dataAnalytics, location);
+      //   await this.PersistFromScrape(
+      //     baseFieldSearches.frontEndDevloper,
+      //     location,
+      //   );
+      //   await this.PersistFromScrape(
+      //     baseFieldSearches.graphicDesigner,
+      //     location,
+      //   );
+      //   await this.PersistFromScrape(baseFieldSearches.uxUi, location);
+      // });
+
+      //   //// TRY A LONG CRON JOB
+      await locationSearchesArray.forEach(async (location) => {
+        for (let i = 0; i < BasefieldSearchesArray.length; i++) {
+          console.log(
+            await this.PersistFromScrape(BasefieldSearchesArray[i], location),
+          );
+          console.log('scraped ' + BasefieldSearchesArray[i] + ' ' + location);
+          // await setTimeout(20000);
         }
       });
     }
+  }
+
+  async PersistFromScrape(job: string, location: string) {
+    let createJobDtoArray = await this.scrape(job, location);
+    // await this.browser.close();
+    createJobDtoArray = this.filterForRelevantJobs(createJobDtoArray, job);
+    createJobDtoArray = this.addRemoteBoolean(createJobDtoArray);
+    const jobs = this.jobRepository.create(createJobDtoArray);
+    return await this.jobRepository.save(jobs);
   }
 
   private async checkLastScrapeDate() {
     const job = await this.jobRepository.findOne({
       where: { field: baseFieldSearches.softwareDeveloper },
     });
-    if (this.getDateDifference(job.date) >= 7) return true;
+    if (this.getDateDifference(job.date) === 0) return true;
     else return false;
   }
 
@@ -54,7 +96,11 @@ export class JobsService {
   }
 
   async scrape(job: string, location: string) {
-    const page = await this.Browser.newPage();
+    this.browser = await this.puppeteer.launch({
+      headless: false,
+      args: ['--incognito'],
+    });
+    const page = await this.browser.newPage();
     await page.setViewport({ width: 0, height: 0 });
     await page.goto(this.SearchUrlBuilder(job, location), {
       waitUntil: 'domcontentloaded',
@@ -95,7 +141,7 @@ export class JobsService {
     }
     // to verify results being filtered out
     removedJobs.forEach((job) => {
-      console.log(job.title);
+      console.log('Removed Job' + job.title);
     });
     console.log(removedJobs.length);
     return filteredJobs;
@@ -112,14 +158,6 @@ export class JobsService {
       remoteChecked.push(createJobDto);
     }
     return remoteChecked;
-  }
-
-  async PersistFromScrape(job: string, location: string) {
-    let createJobDtoArray = await this.scrape(job, location);
-    createJobDtoArray = this.filterForRelevantJobs(createJobDtoArray, job);
-    createJobDtoArray = this.addRemoteBoolean(createJobDtoArray);
-    const jobs = this.jobRepository.create(createJobDtoArray);
-    return this.jobRepository.save(jobs);
   }
 
   async parseResults(page: Page) {
@@ -153,7 +191,10 @@ export class JobsService {
         jobArray[i] = {
           title: title[i].textContent.trim(),
           field: searchWhat.value,
-          company: company[i].textContent.trim(),
+          company:
+            company[i] === undefined
+              ? 'Not available'
+              : company[i].textContent.trim(),
           location: location[i].textContent.trim(),
           searchedLocation: searchWhere.value,
           description: jobDescription[i].textContent
