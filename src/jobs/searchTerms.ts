@@ -22,7 +22,7 @@ const BasefieldSearchesArray: string[] = [
   'front end devloper',
   'graphic designer',
   'ux ui',
-  'data analytics',
+  // 'data analytics',
 ];
 
 const locationSearchesArray: string[] = ['washington', 'california'];

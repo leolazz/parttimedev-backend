@@ -18,21 +18,6 @@ export class JobsController {
     return this.jobsService.create(createJobDto);
   }
 
-  @Get('/company/:company')
-  findAllByCompany(@Param('company') company: string) {
-    return this.jobsService.findAllByCompany(company);
-  }
-
-  @Get('/field/:field')
-  findAllByField(@Param('field') field: string) {
-    return this.jobsService.findAllByField(field);
-  }
-
-  @Get('/location/:location')
-  findAllByLocation(@Param('location') location: string) {
-    return this.jobsService.findAllByLocation(location);
-  }
-
   @Get()
   findAll() {
     return this.jobsService.findAll();
@@ -48,15 +33,5 @@ export class JobsController {
   @Get('/test/')
   async TestscrapeAndPersist() {
     return await this.jobsService.cronScrape();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.jobsService.findOne(+id);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.jobsService.remove(+id);
   }
 }
