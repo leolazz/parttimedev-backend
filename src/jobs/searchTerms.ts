@@ -17,10 +17,10 @@ enum locationSearches {
 }
 
 const BasefieldSearchesArray: string[] = [
-  'software developer',
-  'back end developer',
-  'front end devloper',
-  'graphic designer',
+  // 'software developer',
+  // 'back end developer',
+  'front end developer',
+  // 'graphic designer',
   'ux ui',
   // 'data analytics',
 ];
@@ -57,6 +57,8 @@ const softwareDeveloper: string[] = [
   'wordpress',
   'devops',
   'dev ops',
+  'front end',
+  'back end',
 ];
 
 // search term: graphic designer

@@ -27,20 +27,46 @@ export class JobsService {
   private browser: Browser;
   // @Cron(CronExpression.EVERY_10_MINUTES)
   async cronScrape() {
+    this.browser = await this.puppeteer.launch({ headless: false });
     const scrapeAndPurgeNeeded = true;
     // await this.checkLastScrapeDate();
     console.log(scrapeAndPurgeNeeded);
     if (scrapeAndPurgeNeeded) {
       await this.jobRepository.clear();
       //   //// TRY A LONG CRON JOB
-      await locationSearchesArray.forEach(async (location) => {
-        for (let i = 0; i < BasefieldSearchesArray.length; i++) {
-          console.log(
-            await this.PersistFromScrape(BasefieldSearchesArray[i], location),
-          );
-          console.log('scraped ' + BasefieldSearchesArray[i] + ' ' + location);
-        }
-      });
+
+      // scrape each field for each location
+      await Promise.all(
+        locationSearchesArray.map(
+          async (location) =>
+            await Promise.all(
+              BasefieldSearchesArray.map(
+                async (search) =>
+                  await this.PersistFromScrape(search, location),
+              ),
+            ),
+        ),
+      );
+      await this.browser.close();
+      // await locationSearchesArray.forEach(async (location) => {
+      //   for (let i = 0; i < BasefieldSearchesArray.length; i++) {
+      //     console.log(
+      //       await this.PersistFromScrape(BasefieldSearchesArray[i], location),
+      //     );
+      //     console.log('scraped ' + BasefieldSearchesArray[i] + ' ' + location);
+      //   }
+      // });
+    }
+  }
+
+  private async scrapeAll() {
+    for await (const location of locationSearchesArray) {
+      for (let i = 0; i < BasefieldSearchesArray.length; i++) {
+        console.log(
+          await this.PersistFromScrape(BasefieldSearchesArray[i], location),
+        );
+        console.log('scraped ' + BasefieldSearchesArray[i] + ' ' + location);
+      }
     }
   }
   private async createPage(browser: Browser, url) {
@@ -136,7 +162,6 @@ export class JobsService {
   }
 
   private async startUpReturnPage(job: string, location: string) {
-    this.browser = await this.puppeteer.launch({ headless: false });
     const page = await this.createPage(
       this.browser,
       this.SearchUrlBuilder(job, location),
@@ -202,28 +227,34 @@ export class JobsService {
   private async handlePagination(page: Page) {
     let url = page.url();
     let baseUrl = url;
+    await page.waitForSelector('#searchCountPages');
     let numberOfResults = await this.getNumberOfResults(page);
     let numberOfPages = Math.round(parseInt(numberOfResults, 10) / 15);
     let offset = 0;
     let pages: CreateJobDto[][] = [];
-    try {
-      if (numberOfPages <= 1) {
-        let jobs: CreateJobDto[] = await this.parseResults(page);
-        return jobs;
-      } else {
-        for (let i = 0; i < numberOfPages; i++) {
-          offset === 0 ? (url = url) : (url = baseUrl + `&start=${offset}`);
-          console.log('Check url for selector issues', url);
-          await page.goto(url, { waitUntil: 'networkidle2', timeout: 0 });
-          // await page.waitForSelector('span.salary-snippet');
-          pages[i] = await this.parseResults(page);
-          offset = offset + 10;
+    return new Promise<CreateJobDto[]>(async (resolve, reject) => {
+      try {
+        if (numberOfPages <= 1) {
+          let jobs: CreateJobDto[] = await this.parseResults(page);
+          page.close();
+          return resolve(jobs);
+        } else {
+          for (let i = 0; i < numberOfPages; i++) {
+            offset === 0 ? (url = url) : (url = baseUrl + `&start=${offset}`);
+            await page.goto(url, { waitUntil: 'networkidle2', timeout: 0 });
+            // await page.waitForSelector('span.salary-snippet');
+            pages[i] = await this.parseResults(page);
+            offset = offset + 10;
+          }
+          const refactoredPages = this.refactorJobArray(pages);
+          page.close();
+          return resolve(refactoredPages);
         }
-        return this.refactorJobArray(pages);
+      } catch (e) {
+        console.log('Check url for selector issues', url);
+        return reject(e);
       }
-    } catch (e) {
-      console.log('exception at handlePagination ', e);
-    }
+    });
   }
 
   private async checkLastScrapeDate() {
@@ -249,7 +280,7 @@ export class JobsService {
 
   private addAdditionalSearchTerms(search: string) {
     let completeSearchTerms: string[] = search.split(' ');
-    if (search.includes('developer')) {
+    if (search === baseFieldSearches.softwareDeveloper) {
       completeSearchTerms = completeSearchTerms.concat(softwareDeveloper);
     }
     if (search.includes('ux ui')) {
@@ -266,15 +297,16 @@ export class JobsService {
     const filteredJobs: CreateJobDto[] = [];
     let searchTermArray = this.addAdditionalSearchTerms(job);
     for (let i = 0; i < createJobDtoArray.length; i++) {
-      let test = searchTermArray.some((term) => {
+      let containsTerm = searchTermArray.some((term) => {
         return createJobDtoArray[i].title.toLowerCase().includes(term);
       });
-      if (test) filteredJobs.push(createJobDtoArray[i]);
+      if (containsTerm) filteredJobs.push(createJobDtoArray[i]);
       else removedJobs.push(createJobDtoArray[i]);
     }
     // to verify results being filtered out
+    console.log('search = ' + job);
     removedJobs.forEach((job) => {
-      console.log('Removed Job' + job.title);
+      console.log('Removed Job ' + job.title);
     });
     console.log(removedJobs.length);
     return filteredJobs;
@@ -294,6 +326,7 @@ export class JobsService {
   }
 
   private async getNumberOfResults(page: Page) {
+    // try reload to avoid Error: failed to find element matching selector "#searchCountPages"
     let numberOfResults = await page.$eval(
       '#searchCountPages',
       (el: HTMLSpanElement) =>
