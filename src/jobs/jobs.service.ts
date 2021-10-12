@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateJobDto } from './dto/create-job.dto';
@@ -11,7 +11,6 @@ import {
 } from './searchTerms';
 import { Browser, Page } from 'puppeteer-extra-plugin/dist/puppeteer';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { setTimeout } from 'timers/promises';
 import { PuppeteerExtra } from 'puppeteer-extra';
 import UserAgent from 'user-agents';
 
@@ -25,17 +24,20 @@ export class JobsService {
     private readonly puppeteer: PuppeteerExtra,
   ) {}
   private browser: Browser;
-  // @Cron(CronExpression.EVERY_10_MINUTES)
+  @Cron(CronExpression.EVERY_DAY_AT_11PM)
   async cronScrape() {
-    this.browser = await this.puppeteer.launch({ headless: false });
-    const scrapeAndPurgeNeeded = true;
-    // await this.checkLastScrapeDate();
+    this.browser = await this.puppeteer.launch();
+
+    // for testing usage.
+    // const scrapeAndPurgeNeeded = true;
+
+    const scrapeAndPurgeNeeded = await this.checkLastScrapeDate();
     console.log(scrapeAndPurgeNeeded);
     if (scrapeAndPurgeNeeded) {
       await this.jobRepository.clear();
-      //   //// TRY A LONG CRON JOB
 
       // scrape each field for each location
+      // this could be flattened, but it works
       await Promise.all(
         locationSearchesArray.map(
           async (location) =>
@@ -47,28 +49,10 @@ export class JobsService {
             ),
         ),
       );
-      await this.browser.close();
-      // await locationSearchesArray.forEach(async (location) => {
-      //   for (let i = 0; i < BasefieldSearchesArray.length; i++) {
-      //     console.log(
-      //       await this.PersistFromScrape(BasefieldSearchesArray[i], location),
-      //     );
-      //     console.log('scraped ' + BasefieldSearchesArray[i] + ' ' + location);
-      //   }
-      // });
+      await this.browser.close().finally(() => console.log('scrape completed'));
     }
   }
 
-  private async scrapeAll() {
-    for await (const location of locationSearchesArray) {
-      for (let i = 0; i < BasefieldSearchesArray.length; i++) {
-        console.log(
-          await this.PersistFromScrape(BasefieldSearchesArray[i], location),
-        );
-        console.log('scraped ' + BasefieldSearchesArray[i] + ' ' + location);
-      }
-    }
-  }
   private async createPage(browser: Browser, url) {
     //Randomize User agent or Set a valid one
     const userAgent = new UserAgent();
@@ -149,26 +133,16 @@ export class JobsService {
     return page;
   }
   async PersistFromScrape(job: string, location: string) {
-    let createJobDtoArray = await this.scrape(job, location);
+    const page = await this.createPage(
+      this.browser,
+      this.SearchUrlBuilder(job, location),
+    );
+    let createJobDtoArray = await this.handlePagination(page);
     createJobDtoArray = this.filterForRelevantJobs(createJobDtoArray, job);
     createJobDtoArray = this.addRemoteBoolean(createJobDtoArray);
     const jobs = this.jobRepository.create(createJobDtoArray);
     return await this.jobRepository.save(jobs);
   }
-
-  async scrape(job: string, location: string) {
-    const page = await this.startUpReturnPage(job, location);
-    return await this.handlePagination(page);
-  }
-
-  private async startUpReturnPage(job: string, location: string) {
-    const page = await this.createPage(
-      this.browser,
-      this.SearchUrlBuilder(job, location),
-    );
-    return page;
-  }
-
   async parseResults(page: Page) {
     try {
       let jobs = await page.evaluate(async () => {
@@ -227,7 +201,13 @@ export class JobsService {
   private async handlePagination(page: Page) {
     let url = page.url();
     let baseUrl = url;
+
+    // errors on this selector occur 'randomly'. If it becomes an larger issue
+    // a loop using page.$ and reloading if none found is the next option
+    // wait for xPath added for a higher level check of the parent div
+    await page.waitForXPath('//*[@id="resultsCol"]/div[3]/div[4]');
     await page.waitForSelector('#searchCountPages');
+
     let numberOfResults = await this.getNumberOfResults(page);
     let numberOfPages = Math.round(parseInt(numberOfResults, 10) / 15);
     let offset = 0;
@@ -242,7 +222,6 @@ export class JobsService {
           for (let i = 0; i < numberOfPages; i++) {
             offset === 0 ? (url = url) : (url = baseUrl + `&start=${offset}`);
             await page.goto(url, { waitUntil: 'networkidle2', timeout: 0 });
-            // await page.waitForSelector('span.salary-snippet');
             pages[i] = await this.parseResults(page);
             offset = offset + 10;
           }
@@ -261,7 +240,7 @@ export class JobsService {
     const job = await this.jobRepository.findOne({
       where: { field: baseFieldSearches.softwareDeveloper },
     });
-    if (this.getDateDifference(job.date) === 7) return true;
+    if (this.getDateDifference(job.date) <= -7) return true;
     else return false;
   }
 
@@ -280,7 +259,7 @@ export class JobsService {
 
   private addAdditionalSearchTerms(search: string) {
     let completeSearchTerms: string[] = search.split(' ');
-    if (search === baseFieldSearches.softwareDeveloper) {
+    if (search.toLowerCase().includes('developer')) {
       completeSearchTerms = completeSearchTerms.concat(softwareDeveloper);
     }
     if (search.includes('ux ui')) {

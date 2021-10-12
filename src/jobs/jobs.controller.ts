@@ -23,14 +23,7 @@ export class JobsController {
     return this.jobsService.findAll();
   }
 
-  @Get('/scrape/')
-  async scrapeAndPersist() {
-    return await this.jobsService.PersistFromScrape(
-      baseFieldSearches.softwareDeveloper,
-      locationSearches.washington,
-    );
-  }
-  @Get('/test/')
+  @Get('/test/scrapeall')
   async TestscrapeAndPersist() {
     return await this.jobsService.cronScrape();
   }
