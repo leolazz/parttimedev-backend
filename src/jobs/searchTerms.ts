@@ -1,22 +1,14 @@
-const BasefieldSearches: string[] = [
+const BasefieldSearchesArray: string[] = [
   'software developer',
   'back end developer',
-  'front end devloper',
-  'graphic designer',
+  'front end developer',
   'ux ui',
-  'data analytics',
+  // 'graphic designer',
+  // 'data analytics',
 ];
 
-const locationSearches: string[] = [
-  'washington',
-  'seattle',
-  'bellevue',
-  'california',
-  'san francisco',
-  'la',
-];
+const locationSearchesArray: string[] = ['washington', 'california'];
 
-// search term: software developer
 const softwareDeveloper: string[] = [
   'engineer',
   'engineering',
@@ -44,7 +36,35 @@ const softwareDeveloper: string[] = [
   'node.js',
   'js',
   'wordpress',
+  'devops',
+  'dev ops',
+  'front end',
+  'back end',
+  'programmer',
+  'programming',
+  'development',
+  'full stack',
 ];
+
+enum baseFieldSearches {
+  softwareDeveloper = 'software developer',
+  backEndDeveloper = 'back end developer',
+  frontEndDevloper = 'front end developer',
+  graphicDesigner = 'graphic designer',
+  uxUi = 'ux ui',
+  dataAnalytics = 'data analytics',
+}
+
+enum locationSearches {
+  washington = 'washington',
+  seattle = 'seattle',
+  bellevue = 'bellevue',
+  california = 'california',
+  sanFrancisco = 'san francisco',
+  la = 'la',
+}
+
+// search term: software developer
 
 // search term: graphic designer
 const graphicDesiner: string[] = [' '];
@@ -52,4 +72,12 @@ const graphicDesiner: string[] = [' '];
 // search term: graphic designer
 const uxui: string[] = ['ux/ui', 'user experience', 'user interface'];
 
-export { softwareDeveloper, graphicDesiner, uxui };
+export {
+  softwareDeveloper,
+  graphicDesiner,
+  uxui,
+  locationSearches,
+  baseFieldSearches,
+  locationSearchesArray,
+  BasefieldSearchesArray,
+};

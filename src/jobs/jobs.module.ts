@@ -12,7 +12,7 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
     JobsService,
     {
       provide: 'PuppeteerStealth',
-      useValue: Puppeteer.use(StealthPlugin()).launch(),
+      useValue: Puppeteer.use(StealthPlugin()),
     },
   ],
 })
