@@ -26,14 +26,13 @@ export class JobsService {
   private browser: Browser;
   @Cron(CronExpression.EVERY_DAY_AT_11PM)
   async cronScrape() {
-    this.browser = await this.puppeteer.launch();
-
     // for testing usage.
     // const scrapeAndPurgeNeeded = true;
 
     const scrapeAndPurgeNeeded = await this.checkLastScrapeDate();
     console.log(scrapeAndPurgeNeeded);
     if (scrapeAndPurgeNeeded) {
+      this.browser = await this.puppeteer.launch();
       await this.jobRepository.clear();
 
       // scrape each field for each location
