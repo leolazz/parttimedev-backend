@@ -1,18 +1,18 @@
-version: "3.8"
+version: '3.8'
 services:
   db:
     container_name: parttimedev_postgres
-    image:  postgres
-    restart: always 
+    image: postgres
+    restart: always
     ports:
-      - "5432:5432"
-    env_file: 
+      - '5432:5432'
+    env_file:
       - docker.env
   pgadmin:
     container_name: pgadmin4_container
     image: dpage/pgadmin4
     restart: always
-    env_file: 
+    env_file:
       - docker.env
     ports:
-    - "5050:80"
+      - '5050:80'
