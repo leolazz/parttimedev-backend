@@ -7,6 +7,7 @@ import { from, mergeMap, lastValueFrom, toArray } from 'rxjs';
 import {
   baseFieldSearches,
   BasefieldSearchesArray,
+  getSearches,
   locationSearchesArray,
   softwareDeveloper,
 } from './searchTerms';
@@ -26,6 +27,7 @@ export class JobsService {
     private readonly puppeteer: PuppeteerExtra,
   ) {}
   private browser: Browser;
+
   @Cron(CronExpression.EVERY_DAY_AT_11PM)
   async cronScrape() {
     const scrapeAndPurgeNeeded = await this.checkLastScrapeDate();
@@ -43,48 +45,22 @@ export class JobsService {
       });
       if (await this.jobRepository.count()) {
         await this.jobRepository.clear();
-        this.logger.log('DB wiped');
+        this.logger.log('[DB STATUS] 0 ROWS');
       }
 
-      const searches = [];
-
-      locationSearchesArray.forEach((location) => {
-        BasefieldSearchesArray.forEach((job) => {
-          searches.push([location, job]);
+      await lastValueFrom(
+        from(getSearches()).pipe(
+          mergeMap(async (search) => {
+            this.logger.log(`[SCRAPING] ${search[1]} in ${search[0]}`);
+            return await this.PersistFromScrape(search[1], search[0]);
+          }, 1),
+          toArray(),
+        ),
+      ).then(async () => {
+        await this.browser.close().finally(async () => {
+          this.logger.log('[COLLECTION COMPLETED]');
         });
       });
-
-      const scrape = from(searches).pipe(
-        mergeMap(async (search) => {
-          this.logger.log(`[SCRAPING] ${search[1]} in ${search[0]}`);
-          return await this.PersistFromScrape(search[1], search[0]);
-        }, 1),
-        toArray(),
-      );
-
-      const complete = await lastValueFrom(scrape).then(async () => {
-        await this.browser
-          .close()
-          .finally(() => this.logger.log('scrape completed'));
-      });
-
-      // scrape each field for each location
-      // this could be flattened, but it works
-      //   await Promise.all(
-      //     locationSearchesArray.map(
-      //       async (location) =>
-      //         await Promise.all(
-      //           BasefieldSearchesArray.map(
-      //             async (search) =>
-      //               await this.PersistFromScrape(search, location),
-      //           ),
-      //         ),
-      //     ),
-      //   );
-      //   await this.browser
-      //     .close()
-      //     .finally(() => this.logger.log('scrape completed'));
-      // }
     }
   }
 
@@ -278,7 +254,7 @@ export class JobsService {
 
   private async checkLastScrapeDate() {
     const dbCount = await this.jobRepository.count();
-    this.logger.log(`Entries in DB ${dbCount}`);
+    this.logger.log(`[DB STATUS] ${dbCount} ROWS`);
     if (dbCount) {
       const job = await this.jobRepository.findOne();
       if (this.getDateDifference(job.date) <= -7) return true;

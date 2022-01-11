@@ -72,6 +72,16 @@ const graphicDesiner: string[] = [' '];
 // search term: graphic designer
 const uxui: string[] = ['ux/ui', 'user experience', 'user interface'];
 
+function getSearches(): string[][] {
+  const searches = [];
+  locationSearchesArray.forEach((location) => {
+    BasefieldSearchesArray.forEach((job) => {
+      searches.push([location, job]);
+    });
+  });
+  return searches;
+}
+
 export {
   softwareDeveloper,
   graphicDesiner,
@@ -80,4 +90,5 @@ export {
   baseFieldSearches,
   locationSearchesArray,
   BasefieldSearchesArray,
+  getSearches,
 };
