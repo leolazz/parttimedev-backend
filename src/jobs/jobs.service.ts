@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateJobDto } from './dto/create-job.dto';
 import { Job } from './entities/job.entity';
+import { from, mergeMap, lastValueFrom, toArray } from 'rxjs';
 import {
   baseFieldSearches,
   BasefieldSearchesArray,
@@ -27,16 +28,12 @@ export class JobsService {
   private browser: Browser;
   @Cron(CronExpression.EVERY_DAY_AT_11PM)
   async cronScrape() {
-    // for testing usage.
-    // const scrapeAndPurgeNeeded = true;
-
     const scrapeAndPurgeNeeded = await this.checkLastScrapeDate();
-    this.logger.log(`Run scraping cycle ${scrapeAndPurgeNeeded}`);
+    this.logger.log(`[EXECUTE COLLECTION] ${scrapeAndPurgeNeeded}`);
     if (scrapeAndPurgeNeeded) {
       this.browser = await this.puppeteer.launch({
         headless: true,
         // config for executation inside a container
-
         args: [
           '--disable-gpu',
           '--disable-dev-shm-usage',
@@ -49,28 +46,51 @@ export class JobsService {
         this.logger.log('DB wiped');
       }
 
+      const searches = [];
+
+      locationSearchesArray.forEach((location) => {
+        BasefieldSearchesArray.forEach((job) => {
+          searches.push([location, job]);
+        });
+      });
+
+      const scrape = from(searches).pipe(
+        mergeMap(async (search) => {
+          this.logger.log(`[SCRAPING] ${search[1]} in ${search[0]}`);
+          return await this.PersistFromScrape(search[1], search[0]);
+        }, 1),
+        toArray(),
+      );
+
+      const complete = await lastValueFrom(scrape).then(async () => {
+        await this.browser
+          .close()
+          .finally(() => this.logger.log('scrape completed'));
+      });
+
       // scrape each field for each location
       // this could be flattened, but it works
-      await Promise.all(
-        locationSearchesArray.map(
-          async (location) =>
-            await Promise.all(
-              BasefieldSearchesArray.map(
-                async (search) =>
-                  await this.PersistFromScrape(search, location),
-              ),
-            ),
-        ),
-      );
-      await this.browser
-        .close()
-        .finally(() => this.logger.log('scrape completed'));
+      //   await Promise.all(
+      //     locationSearchesArray.map(
+      //       async (location) =>
+      //         await Promise.all(
+      //           BasefieldSearchesArray.map(
+      //             async (search) =>
+      //               await this.PersistFromScrape(search, location),
+      //           ),
+      //         ),
+      //     ),
+      //   );
+      //   await this.browser
+      //     .close()
+      //     .finally(() => this.logger.log('scrape completed'));
+      // }
     }
   }
 
   private async createPage(browser: Browser, url) {
     //Randomize User agent or Set a valid one
-    const userAgent = new UserAgent();
+    const userAgent = new UserAgent({ deviceCategory: 'desktop' });
     const UA = userAgent.toString();
     const page = await browser.newPage();
 
@@ -153,6 +173,7 @@ export class JobsService {
       this.SearchUrlBuilder(job, location),
     );
     let createJobDtoArray = await this.handlePagination(page);
+    await page.close();
     createJobDtoArray = this.filterForRelevantJobs(createJobDtoArray, job);
     createJobDtoArray = this.addRemoteBoolean(createJobDtoArray);
     const jobs = this.jobRepository.create(createJobDtoArray);
@@ -219,6 +240,8 @@ export class JobsService {
     let url = page.url();
     let baseUrl = url;
 
+    // This acutally seems to be caused by a using a mobile user agent.
+    // The selector is different on the mobile site.
     // errors on this selector occur 'randomly'. If it becomes an larger issue
     // a loop using page.$ and reloading if none found is the next option
     // wait for xPath added for a higher level check of the parent div
@@ -302,14 +325,13 @@ export class JobsService {
       else removedJobs.push(createJobDtoArray[i]);
     }
     // to verify results being filtered out
-    this.logger.log('search = ' + jobType);
     removedJobs.forEach((job) => {
       this.logger.log(
         `[FILTERING ${jobType.toLocaleUpperCase()}] Removed ${job.title}`,
       );
     });
     this.logger.log(
-      `${removedJobs.length} Filtered from ${jobType.toLocaleUpperCase()} `,
+      `[${removedJobs.length} FILTERED] from ${jobType.toLocaleUpperCase()} `,
     );
     return filteredJobs;
   }
