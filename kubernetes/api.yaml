@@ -14,13 +14,11 @@ spec:
     spec:
       containers:
         - name: parttimedev-backend
-          image: leolazz/parttimedev-backend:v1.2
+          image: leolazz/parttimedev-backend:v1.5
           resources:
             limits:
               memory: '128Mi'
               cpu: '500m'
-          ports:
-            - containerPort: 8080
           env:
             - name: DATABASE_PORT
               value: '5432'
@@ -50,11 +48,10 @@ kind: Service
 metadata:
   name: parttimedev-backend-service
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
     app: parttimedev-backend
   ports:
     - protocol: TCP
-      port: 8080
+      port: 80
       targetPort: 8080
-      nodePort: 30001

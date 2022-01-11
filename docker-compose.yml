@@ -10,14 +10,14 @@ services:
       - docker.env
   api:
     container_name: parttimedev_api_dev
-    image: parttimedev_api_dev:1.0.0
+    image: test
     build:
       context: .
       target: development
       dockerfile: ./Dockerfile
     env_file:
       - .env
-    command: npm run start:debug
+    command: npm run start:prod
     ports:
       - 8080:8080
       # debugger port

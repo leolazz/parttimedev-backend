@@ -38,7 +38,13 @@ spec:
                 configMapKeyRef:
                   name: postgres-config
                   key: DB-name
-
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: parttimedev
+      volumes:
+        - name: parttimedev
+          persistentVolumeClaim:
+            claimName: postgres-pv-claim
 ---
 apiVersion: v1
 kind: Service
@@ -47,6 +53,8 @@ metadata:
 spec:
   selector:
     app: postgres
+  type: NodePort
   ports:
     - port: 5432
       targetPort: 5432
+      nodePort: 30002

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateJobDto } from './dto/create-job.dto';
@@ -16,6 +16,7 @@ import UserAgent from 'user-agents';
 
 @Injectable()
 export class JobsService {
+  private readonly logger = new Logger(JobsService.name);
   constructor(
     @InjectRepository(Job)
     private readonly jobRepository: Repository<Job>,
@@ -30,10 +31,23 @@ export class JobsService {
     // const scrapeAndPurgeNeeded = true;
 
     const scrapeAndPurgeNeeded = await this.checkLastScrapeDate();
-    console.log(scrapeAndPurgeNeeded);
+    this.logger.log(`Run scraping cycle ${scrapeAndPurgeNeeded}`);
     if (scrapeAndPurgeNeeded) {
-      this.browser = await this.puppeteer.launch();
-      await this.jobRepository.clear();
+      this.browser = await this.puppeteer.launch({
+        headless: true,
+        // config for executation inside a container
+
+        args: [
+          '--disable-gpu',
+          '--disable-dev-shm-usage',
+          '--disable-setuid-sandbox',
+          '--no-sandbox',
+        ],
+      });
+      if (await this.jobRepository.count()) {
+        await this.jobRepository.clear();
+        this.logger.log('DB wiped');
+      }
 
       // scrape each field for each location
       // this could be flattened, but it works
@@ -48,7 +62,9 @@ export class JobsService {
             ),
         ),
       );
-      await this.browser.close().finally(() => console.log('scrape completed'));
+      await this.browser
+        .close()
+        .finally(() => this.logger.log('scrape completed'));
     }
   }
 
@@ -157,17 +173,19 @@ export class JobsService {
         const location = document.querySelectorAll('div.companyLocation');
         const incomeCondition = document.querySelectorAll('td.resultContent');
         const jobDescription = document.querySelectorAll('div.job-snippet');
-        const income = document.querySelectorAll('span.salary-snippet');
+        const income = document.querySelectorAll(
+          'div.metadata.salary-snippet-container',
+        );
         const utcDate = new Date().toUTCString();
         const NA = 'Not Available';
         let correctedIncome: string[] = [];
         let incomeCounter = 0;
         for (let i = 0; i < linksNodeList.length; i++) {
           if (incomeCondition[i].childElementCount === 4) {
-            correctedIncome.push(income[incomeCounter].textContent);
+            income[incomeCounter] === undefined
+              ? correctedIncome.push(NA)
+              : correctedIncome.push(income[incomeCounter]?.textContent);
             incomeCounter++;
-          } else {
-            correctedIncome.push('Not Available');
           }
         }
         let jobArray: CreateJobDto[] = [];
@@ -184,7 +202,7 @@ export class JobsService {
               jobDescription[i] === undefined
                 ? NA
                 : jobDescription[i].textContent.trim().replace(/\n|\r/g, ''),
-            income: correctedIncome[i],
+            income: correctedIncome[i] === undefined ? NA : correctedIncome[i],
             link: linksNodeList[i].href,
             date: utcDate,
           };
@@ -193,7 +211,7 @@ export class JobsService {
       });
       return jobs;
     } catch (e) {
-      console.log('exception at page.evaluate parseResults ', e);
+      this.logger.log('EXCEPTION at page.evaluate parseResults ', e);
     }
   }
 
@@ -204,7 +222,7 @@ export class JobsService {
     // errors on this selector occur 'randomly'. If it becomes an larger issue
     // a loop using page.$ and reloading if none found is the next option
     // wait for xPath added for a higher level check of the parent div
-    await page.waitForXPath('//*[@id="resultsCol"]/div[3]/div[4]');
+    // await page.waitForXPath('//*[@id="resultsCol"]/div[3]/div[4]');
     await page.waitForSelector('#searchCountPages');
 
     let numberOfResults = await this.getNumberOfResults(page);
@@ -229,18 +247,20 @@ export class JobsService {
           return resolve(refactoredPages);
         }
       } catch (e) {
-        console.log('Check url for selector issues', url);
+        this.logger.log('If Error Occurs check url for selector issues', url);
         return reject(e);
       }
     });
   }
 
   private async checkLastScrapeDate() {
-    const job = await this.jobRepository.findOne({
-      where: { field: baseFieldSearches.softwareDeveloper },
-    });
-    if (this.getDateDifference(job.date) <= -7) return true;
-    else return false;
+    const dbCount = await this.jobRepository.count();
+    this.logger.log(`Entries in DB ${dbCount}`);
+    if (dbCount) {
+      const job = await this.jobRepository.findOne();
+      if (this.getDateDifference(job.date) <= -7) return true;
+      else return false;
+    } else return true;
   }
 
   private getDateDifference(jobDateString: string) {
@@ -269,11 +289,11 @@ export class JobsService {
 
   private filterForRelevantJobs(
     createJobDtoArray: CreateJobDto[],
-    job: string,
+    jobType: string,
   ) {
     const removedJobs: CreateJobDto[] = [];
     const filteredJobs: CreateJobDto[] = [];
-    let searchTermArray = this.addAdditionalSearchTerms(job);
+    let searchTermArray = this.addAdditionalSearchTerms(jobType);
     for (let i = 0; i < createJobDtoArray.length; i++) {
       let containsTerm = searchTermArray.some((term) => {
         return createJobDtoArray[i].title.toLowerCase().includes(term);
@@ -282,11 +302,15 @@ export class JobsService {
       else removedJobs.push(createJobDtoArray[i]);
     }
     // to verify results being filtered out
-    console.log('search = ' + job);
+    this.logger.log('search = ' + jobType);
     removedJobs.forEach((job) => {
-      console.log('Removed Job ' + job.title);
+      this.logger.log(
+        `[FILTERING ${jobType.toLocaleUpperCase()}] Removed ${job.title}`,
+      );
     });
-    console.log(removedJobs.length);
+    this.logger.log(
+      `${removedJobs.length} Filtered from ${jobType.toLocaleUpperCase()} `,
+    );
     return filteredJobs;
   }
 
