@@ -48,12 +48,16 @@ export class JobsService {
         this.logger.log('[DB STATUS] 0 ROWS');
       }
 
+      // map this to enviroment variable and adjust depending on
+      // the enviroment resource availablity for faster collection
+      const concurrencies = 1;
+
       await lastValueFrom(
         from(getSearches()).pipe(
           mergeMap(async (search) => {
             this.logger.log(`[SCRAPING] ${search[1]} in ${search[0]}`);
             return await this.PersistFromScrape(search[1], search[0]);
-          }, 1),
+          }, concurrencies),
           toArray(),
         ),
       ).then(async () => {

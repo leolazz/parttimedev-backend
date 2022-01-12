@@ -10,11 +10,7 @@ services:
       - docker.env
   api:
     container_name: parttimedev_api_dev
-    image: test
-    build:
-      context: .
-      target: development
-      dockerfile: ./Dockerfile
+    image: leolazz/parttimedev-backend:2.0
     env_file:
       - .env
     command: npm run start:prod
