@@ -1,23 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: parttimedev-backend-deployment
+  name: server-ptd-deployment
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: parttimedev-backend
+      component: server-ptd
   template:
     metadata:
       labels:
-        app: parttimedev-backend
+        component: server-ptd
     spec:
       containers:
-        - name: parttimedev-backend
-          image: leolazz/parttimedev-backend:v1.5
+        - name: server-ptd
+          image: leolazz/parttimedev-backend:2.0
+          ports:
+            - containerPort: 5000
           resources:
             limits:
-              memory: '128Mi'
+              ephemeral-storage: '1Gi'
+              memory: '1Gi'
               cpu: '500m'
           env:
             - name: DATABASE_PORT
@@ -46,12 +49,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: parttimedev-backend-service
+  name: server-ptd-cluster-ip-service
 spec:
   type: ClusterIP
   selector:
-    app: parttimedev-backend
+    component: server-ptd
   ports:
     - protocol: TCP
-      port: 80
+      port: 8080
       targetPort: 8080

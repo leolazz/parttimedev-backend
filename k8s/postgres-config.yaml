@@ -5,5 +5,5 @@ metadata:
   labels:
     app: postgres
 data:
-  DB-host: postgres-service
+  DB-host: postgres-cluster-ip-service
   DB-name: parttimedev

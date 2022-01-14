@@ -7,17 +7,18 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: postgres
+      component: postgres
   template:
     metadata:
       labels:
-        app: postgres
+        component: postgres
     spec:
       containers:
         - name: postgres
           image: postgres:latest
           resources:
             limits:
+              ephemeral-storage: '1Gi'
               memory: '128Mi'
               cpu: '500m'
           ports:
@@ -40,21 +41,20 @@ spec:
                   key: DB-name
           volumeMounts:
             - mountPath: /var/lib/postgresql/data
-              name: parttimedev
+              name: ptd
       volumes:
-        - name: parttimedev
+        - name: ptd
           persistentVolumeClaim:
             claimName: postgres-pv-claim
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: postgres-service
+  name: postgres-cluster-ip-service
 spec:
   selector:
-    app: postgres
-  type: NodePort
+    component: postgres
+  type: ClusterIP
   ports:
     - port: 5432
       targetPort: 5432
-      nodePort: 30002
