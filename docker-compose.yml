@@ -1,24 +1,25 @@
 version: '3.8'
 services:
-  db:
+  postgres:
     container_name: parttimedev_postgres
     image: postgres
     restart: always
     ports:
       - '5432:5432'
-    env_file:
-      - docker.env
+    environment:
+      - POSTGRES_PASSWORD=pass123
   api:
     container_name: parttimedev_api_dev
     image: leolazz/parttimedev-backend:2.0
-    env_file:
-      - .env
+    environment:
+      - DATABASE_USER=postgres
+      - POSTGRES_PASSWORD=pass123
+      - DATABASE_NAME=parttimedev
+      - DATABASE_PORT=5432
+      - DATABASE_HOST=postgres
     command: npm run start:prod
     ports:
       - 8080:8080
       # debugger port
       - 9229:9229
-    volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
     restart: unless-stopped

@@ -20,8 +20,8 @@ spec:
           resources:
             limits:
               ephemeral-storage: '1Gi'
-              memory: '1Gi'
-              cpu: '500m'
+              memory: '200m'
+              cpu: '100m'
           env:
             - name: DATABASE_PORT
               value: '5432'

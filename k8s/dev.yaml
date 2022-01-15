@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ptd-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: ptd
+  template:
+    metadata:
+      labels:
+        component: ptd
+    spec:
+      containers:
+        - name: client-ptd
+          image: leolazz/parttimedev-client:2
+          resources:
+            limits:
+              memory: '100Mi'
+              cpu: '100m'
+          ports:
+            - containerPort: 3000
+        - name: server-ptd
+          image: leolazz/parttimedev-backend:2.0
+          ports:
+            - containerPort: 5000
+          resources:
+            limits:
+              ephemeral-storage: '1Gi'
+              memory: '1Gi'
+              cpu: '200m'
+          env:
+            - name: DATABASE_PORT
+              value: '5432'
+            - name: DATABASE_HOST
+              value: postgres.default.svc.cluster.local
+            - name: DATABASE_NAME
+              value: ptd
+            - name: DATABASE_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: admin
+                  key: password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: server-ptd-service
+spec:
+  type: ClusterIP
+  selector:
+    component: ptd
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: client-ptd-service
+spec:
+  type: ClusterIP
+  selector:
+    component: ptd
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: client-ptd-ingress
+  labels:
+    component: client-ptd
+  annotations:
+    kubernetes.io/ingress.class: 'traefik'
+spec:
+  rules:
+    - host: parttimedev.internal.lazz.tech
+      http:
+        paths:
+          - path: /jobs
+            pathType: Prefix
+            backend:
+              service:
+                name: server-ptd-service
+                port:
+                  number: 8080
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: client-ptd-service
+                port:
+                  number: 3000
+
+---
+
