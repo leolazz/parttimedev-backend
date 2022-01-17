@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: client-ptd
-          image: leolazz/parttimedev-client:2
+          image: leolazz/parttimedev-client:2.1
           resources:
             limits:
               memory: '100Mi'
@@ -22,7 +22,7 @@ spec:
           ports:
             - containerPort: 3000
         - name: server-ptd
-          image: leolazz/parttimedev-backend:2.0
+          image: leolazz/parttimedev-backend:2.1
           ports:
             - containerPort: 5000
           resources:

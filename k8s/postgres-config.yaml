@@ -6,4 +6,4 @@ metadata:
     app: postgres
 data:
   DB-host: postgres-cluster-ip-service
-  DB-name: parttimedev
+  DB-name: ptd

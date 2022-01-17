@@ -4,13 +4,7 @@ import { Repository } from 'typeorm';
 import { CreateJobDto } from './dto/create-job.dto';
 import { Job } from './entities/job.entity';
 import { from, mergeMap, lastValueFrom, toArray } from 'rxjs';
-import {
-  baseFieldSearches,
-  BasefieldSearchesArray,
-  getSearches,
-  locationSearchesArray,
-  softwareDeveloper,
-} from './searchTerms';
+import { getSearches, softwareDeveloper } from './searchTerms';
 import { Browser, Page } from 'puppeteer-extra-plugin/dist/puppeteer';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PuppeteerExtra } from 'puppeteer-extra';
