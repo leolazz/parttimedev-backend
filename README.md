@@ -28,11 +28,6 @@ DATABASE_USER=
 POSTGRES_PASSWORD=
 DATABASE_NAME=
 DATABASE_PORT=
-
-// running in a container using the docker-compose.yaml
-DATABASE_HOST=db
-
-// local development
 DATABASE_HOST=localhost
 ```
 
@@ -67,23 +62,17 @@ $ npm run test:cov
 ```
 $ docker-compose up
 
-
-    build:
-      context: .
-      target: development
-      dockerfile: ./Dockerfile
 ```
 
 ## Kubernetes
 
 ```
-$ kubectl apply -f /kubernetes
 
-// if localhost:8001 displays 'hello world!' the backend deployment is up.
-$ kubectl -n default port-forward svc/parttimedev-backend-service 8001:80
+# Create entry in your host file with the url on line 84 of dev.yaml
+# If you do not have a postgres instance in your cluster apply the
+# entire k8s folder to your cluster and configure the password on line 42 of dev.yaml
 
-$
-
+$ kubectl apply -f k8s/dev.yaml
 
 
 ```

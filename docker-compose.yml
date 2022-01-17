@@ -8,6 +8,8 @@ services:
       - '5432:5432'
     environment:
       - POSTGRES_PASSWORD=pass123
+
+  # Comment out api section to use the database for local development
   api:
     container_name: parttimedev_api_dev
     image: leolazz/parttimedev-backend:2.0
