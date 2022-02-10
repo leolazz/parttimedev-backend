@@ -80,8 +80,12 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: 'traefik'
 spec:
+  tls:
+    - secretName: lazztech-acme-crt-secret
+      hosts:
+        - '*.lazz.tech'
   rules:
-    - host: parttimedev.internal.lazz.tech
+    - host: parttimedev.lazz.tech
       http:
         paths:
           - path: /jobs
