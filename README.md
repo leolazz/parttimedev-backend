@@ -1,11 +1,14 @@
 # PartTimeDev-Backend
 
-Nestjs back end for Partimedev.Work
+Frontend Repo: https://github.com/leolazz/parttimedev-frontend
+
+Built with Nestjs and puppeteer.
 
 PartTimeDev is a job board website made specifcally to help developers and other fields find part time work opportunities
 within the technology sector.
 
-It is built using puppeteer to scrape relevant jobs listings from California and Washington.
+# Live Deployment: https://parttimedev.lazz.tech/
+![screenshot](/parttimedev.png)
 
 ## Requirements
 
@@ -44,19 +47,6 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
-## Test
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
 ## Docker
 
 ```
@@ -73,6 +63,5 @@ $ docker-compose up
 # entire k8s folder to your cluster and configure the password on line 42 of dev.yaml
 
 $ kubectl apply -f k8s/dev.yaml
-
 
 ```
