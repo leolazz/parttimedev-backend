@@ -14,33 +14,31 @@ Built using Nestjs and puppeteer.
 
 ### Why I made this:
 
-For my first project I used a simple, contrived idea in order to allow me to focus on the actual development process and patterns. Nonetheless, I spent much more time than was nessacary on the front-end design. Therefore, I wanted to tackle a more complex backend domain challenge, and limit myself to a simple front-end design.
+For this project I was seeking a more robust and complex backend domain challenge that could actually become usable a product for the target audience, rather than just throw away a project. I aimed to create a front end that felt responsive, streamlined, and focused only on the business domain.
 
-- Rapidly learn a entirely new stack
+- Immersively & rapidly learn a entirely new stack
   - TS & JS
   - Nestjs & Node
   - React
   - PostgresSQL
   - Puppeteer
-- Focus on a greater backend domain challange
-- Created a simple frontend focused soley on the business domain
+- Tackle a more complex backend domain challenge
+- Limit myself to simple frontend focused solely on the business domain
 
 ### Constraints & Challenges:
 
+- Changing dev environment from PC to Mac and from visual studio to VS code
 - Learning to traverse the DOM using a headless browser
 - Parsing the legality of scraping different sources
 - Learning about device and browser fingerprints in order to:
   - Avoid bot detection, without any paid services
   - Employ preventative measures
-- Making a stable, lightweight, and fast CRUD operation for deployment on a limited resource enviroment
-- Dockerizing and deploying the backend with an instance of chromemium into a kubernetes cluster
-- Complete the project as fast as possible
+- Optimizing the scraping C.R.U.D. operation to be stable, lightweight, and fast in a deployment on a limited resource environment
+- Dockerize and deploying the backend with an instance of chromium into a kubernetes cluster
 
 ### Results:
 
-- Learned a new stack and became more capable in it than my original
-- Gained a clear enough mental model of the DOM to comfortable traverse a site in a headless enviroment
-- Greatly improved my skill level in Dev-Ops technologies like Docker and Kubernetes
+In addition to learning a new stack, becoming more capable and comfortable in it than my original, I improved my mental model of the DOM in order to traverse it in a headless environment, and greatly improved my skill level in Dev-Ops technologies like <strong>Docker</strong> and <strong>Kubernetes</strong>.
 
 ## Requirements
 
